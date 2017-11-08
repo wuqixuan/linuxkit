@@ -1,0 +1,55 @@
+#!/bin/bash
+
+FTRACE_PATH=/sys/kernel/debug/tracing/
+PID_FILE=/var/run/kftrace
+
+if [ "$1" = "FORK" ]; then # CHILD
+        echo $1 $2
+        COMMAND=$2
+        echo "PID of this script: $$"
+        sleep 4
+        echo $$ > $PID_FILE
+
+        while [ -f $PID_FILE ]; do
+                echo "PID of this script: $$"
+                sleep 1
+        done
+
+	echo COMMOND_C $COMMOND
+	if [ ! -z "$COMMAND" ]; then
+	        eval $COMMAND
+	fi
+
+        echo "END C"
+else                      # PARENT
+        rm $PID_FILE 2>/dev/null
+
+        echo COMMOND $0
+	FUNCTION=$1
+        ./kftrace "FORK" $2 &
+
+        while [ ! -f $PID_FILE ]; do
+                echo "PPID of this script: $$"
+                sleep 1
+        done
+
+        $COMMOND_PID="`cat /var/run/kfgraph`"
+	echo $COMMOND_PID
+#       echo 0 > $FTRACE_PATH/tracing_on
+#       echo > $FTRACE_PATH/trace
+#       echo function_graph > $FTRACE_PATH/current_tracer
+#       echo $COMMAND_PID > $FTRACE_PATH/set_ftrace_pid
+	
+	sleep 4
+        rm $PID_FILE
+
+        while [ 1 ]; do
+                RET="`ps -p $COMMOND_PID`"
+                if [ "$RET" != "0" ]; then
+                        break;
+                fi
+        done
+
+        echo "END P"
+fi
+
